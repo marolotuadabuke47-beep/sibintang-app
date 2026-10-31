@@ -137,7 +137,8 @@ function updateGuruHeaderUI(isLoggedIn) {
 
   if (isLoggedIn) {
     if (container) {
-      container.className = "w-full max-w-5xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 transition-all duration-300";
+      // SETELAH LOGIN: SEJAJAR DENGAN BODY MAIN (max-w-6xl mx-auto px-4 md:px-6)
+      container.className = "w-full max-w-6xl mx-auto px-4 md:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 transition-all duration-300";
     }
     if (spacer) spacer.classList.add('hidden');
     if (brand) brand.classList.remove('mx-auto');
@@ -145,7 +146,8 @@ function updateGuruHeaderUI(isLoggedIn) {
     if (btnLogout) btnLogout.classList.remove('hidden');
   } else {
     if (container) {
-      container.className = "w-full max-w-xl mx-auto px-4 sm:px-0 py-2.5 sm:py-3 flex items-center justify-between gap-3 transition-all duration-300";
+      // SEBELUM LOGIN: SEJAJAR DENGAN FORM LOGIN (max-w-md mx-auto px-4 sm:px-0)
+      container.className = "w-full max-w-md mx-auto px-4 sm:px-0 py-2.5 sm:py-3 flex items-center justify-between gap-3 transition-all duration-300";
     }
     if (spacer) spacer.classList.remove('hidden');
     if (brand) brand.classList.add('mx-auto');
