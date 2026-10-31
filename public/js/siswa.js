@@ -1,79 +1,40 @@
 let currentStudent = null;
 let html5QrCode = null;
 
-// Helper SVG Icons untuk Notifikasi & Elemen Dinamis
-const ICONS = {
-  check: `<svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
-  error: `<svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`,
-  info: `<svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
-  star: `<svg class="w-3.5 h-3.5 text-amber-500 inline mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`,
-  external: `<svg class="w-3 h-3 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>`,
-  chat: `<svg class="w-3.5 h-3.5 text-slate-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>`
-};
-
-// Fungsi Global Toast Notification dengan Ikon SVG
-function showToast(message, type = 'success') {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-  const iconSvg = type === 'success' ? ICONS.check : type === 'error' ? ICONS.error : ICONS.info;
-  const toast = document.createElement('div');
-  toast.className = `toast-item ${type === 'success' ? 'toast-success' : type === 'error' ? 'toast-error' : 'toast-info'} flex items-center gap-2.5`;
-  toast.innerHTML = `${iconSvg}<span>${message}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(15px)';
-    toast.style.transition = 'all 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
-
 // Inisialisasi saat Halaman Dimuat
 window.addEventListener('DOMContentLoaded', () => {
-  // Isi Dropdown dari constan.js
-isiDropdown('regKelas', DAFTAR_KELAS, 'Pilih Kelas');
-isiDropdown('mapel', DAFTAR_MAPEL, 'Pilih Mata Pelajaran');
-  // Render footer dinamis
+  isiDropdown('regKelas', DAFTAR_KELAS, 'Pilih Kelas');
+  isiDropdown('mapel', DAFTAR_MAPEL, 'Pilih Mata Pelajaran');
   renderFooter();
-  
   initEventListeners();
-  const saved = localStorage.getItem('sibintang_siswa');
-  if (saved) {
-    try {
-      currentStudent = JSON.parse(saved);
-      showDashboard();
-    } catch (e) {
-      localStorage.removeItem('sibintang_siswa');
-      updateHeaderUI(false);
-    }
+
+  // Cek Sesi Siswa via Auth.js
+  currentStudent = Auth.getSiswa();
+  if (currentStudent) {
+    showDashboard();
   } else {
     updateHeaderUI(false);
   }
 });
 
-// Pendaftaran Seluruh Event Listener Elemen DOM
+// Pendaftaran Event Listener Elemen DOM
 function initEventListeners() {
-  // Tombol Header & Autentikasi
   document.getElementById('btnLogout')?.addEventListener('click', logout);
   document.getElementById('authTabBtn-masuk')?.addEventListener('click', () => switchAuthTab('masuk'));
   document.getElementById('authTabBtn-daftar')?.addEventListener('click', () => switchAuthTab('daftar'));
 
-  // Navigasi Tab Menu Siswa
   document.getElementById('tabBtn-absen')?.addEventListener('click', () => switchTab('absen'));
   document.getElementById('tabBtn-tugas')?.addEventListener('click', () => switchTab('tugas'));
   document.getElementById('tabBtn-izin')?.addEventListener('click', () => switchTab('izin'));
   document.getElementById('tabBtn-riwayat')?.addEventListener('click', () => switchTab('riwayat'));
 
-  // Kontrol Tombol Kamera QR
   document.getElementById('btnStartScan')?.addEventListener('click', startScanner);
   document.getElementById('btnStopScan')?.addEventListener('click', stopScanner);
 
-  // Tombol Segarkan / Perbarui Data
   document.getElementById('btnPerbaruiPengumuman')?.addEventListener('click', loadPengumumanSiswa);
   document.getElementById('btnPerbaruiTugasGuru')?.addEventListener('click', loadDaftarTugasGuru);
   document.getElementById('btnSegarkanRiwayat')?.addEventListener('click', loadRiwayat);
 
-  // Banner iOS
   const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
   const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
   const iosBanner = document.getElementById('ios-install-banner');
@@ -85,7 +46,6 @@ function initEventListeners() {
   });
 }
 
-// Fungsi Switch Tab Auth (Masuk vs Registrasi)
 function switchAuthTab(type) {
   const formMasuk = document.getElementById('formMasuk');
   const formDaftar = document.getElementById('formDaftar');
@@ -106,7 +66,7 @@ function switchAuthTab(type) {
   }
 }
 
-// 1A. Proses Masuk (Login) Siswa Berdasarkan NIS
+// 1A. Proses Masuk Siswa
 document.getElementById('formMasuk')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const nis = document.getElementById('loginNis').value.trim();
@@ -123,7 +83,7 @@ document.getElementById('formMasuk')?.addEventListener('submit', async (e) => {
     const result = await res.json();
     if (result.success) {
       currentStudent = result.data;
-      localStorage.setItem('sibintang_siswa', JSON.stringify(currentStudent));
+      Auth.setSiswa(currentStudent);
       showToast('Berhasil masuk ke portal!', 'success');
       showDashboard();
     } else {
@@ -137,7 +97,7 @@ document.getElementById('formMasuk')?.addEventListener('submit', async (e) => {
   }
 });
 
-// 1B. Proses Registrasi (Daftar Baru) Siswa dengan Token Kelas
+// 1B. Proses Registrasi Siswa
 document.getElementById('formDaftar')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('btnSubmitDaftar');
@@ -164,7 +124,7 @@ document.getElementById('formDaftar')?.addEventListener('submit', async (e) => {
     const result = await res.json();
     if (result.success) {
       currentStudent = result.data;
-      localStorage.setItem('sibintang_siswa', JSON.stringify(currentStudent));
+      Auth.setSiswa(currentStudent);
       showToast('Registrasi berhasil! Selamat datang.', 'success');
       showDashboard();
     } else {
@@ -178,7 +138,6 @@ document.getElementById('formDaftar')?.addEventListener('submit', async (e) => {
   }
 });
 
-// 1 C. Di dalam fungsi yang menangani status login/logout:
 function updateHeaderUI(isLoggedIn) {
   const container = document.getElementById('headerSiswaContainer');
   const spacer = document.getElementById('headerBalanceSpacer');
@@ -188,7 +147,6 @@ function updateHeaderUI(isLoggedIn) {
 
   if (isLoggedIn) {
     if (container) {
-      // SETELAH LOGIN: Samakan persis dengan <main> dashboard (max-w-6xl mx-auto px-4 md:px-6)
       container.className = "w-full max-w-6xl mx-auto px-4 md:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 transition-all duration-300";
     }
     if (spacer) spacer.classList.add('hidden');
@@ -197,21 +155,19 @@ function updateHeaderUI(isLoggedIn) {
     if (btnLogout) btnLogout.classList.remove('hidden');
   } else {
     if (container) {
-      // SEBELUM LOGIN: Samakan persis dengan kotak form login (max-w-md mx-auto px-4 sm:px-0)
       container.className = "w-full max-w-md mx-auto px-4 sm:px-0 py-2.5 sm:py-3 flex items-center justify-between gap-3 transition-all duration-300";
     }
     if (spacer) spacer.classList.remove('hidden');
-    if (brand) brand.classList.remove('mx-auto'); // Jangan beri mx-auto jika ada guestBadge di kanan agar tetap flex justify-between
+    if (brand) brand.classList.remove('mx-auto');
     if (guestBadge) guestBadge.classList.remove('hidden');
     if (btnLogout) btnLogout.classList.add('hidden');
   }
+  aturTampilanPasangPWA(isLoggedIn, 'siswaHeaderRight', 'Siswa');
 }
 
 function showDashboard() {
   document.getElementById('loginSection')?.classList.add('hidden');
   document.getElementById('appSection')?.classList.remove('hidden');
-
-  // Panggil fungsi header terpadu
   updateHeaderUI(true);
 
   document.getElementById('profileNama').textContent = currentStudent.nama;
@@ -225,18 +181,22 @@ function showDashboard() {
   loadDaftarTugasGuru();
 }
 
-function logout() {
+async function logout() {
+  const yakin = await konfirmasiModal({
+    judul: 'Keluar Portal Siswa',
+    pesan: 'Apakah Anda yakin ingin keluar dari akun ini?',
+    teksKonfirmasi: 'Keluar',
+    tipe: 'warning'
+  });
+  if (!yakin) return;
+
   stopScanner();
-  localStorage.removeItem('sibintang_siswa');
+  Auth.logoutSiswa();
   currentStudent = null;
 
   document.getElementById('appSection')?.classList.add('hidden');
   document.getElementById('loginSection')?.classList.remove('hidden');
-
-  // Kembalikan posisi header ke tengah
   updateHeaderUI(false);
-
-  showToast('Berhasil keluar dari sesi.', 'info');
 }
 
 // 2. Navigasi Antar Menu Siswa
@@ -265,7 +225,7 @@ function switchTab(tab) {
   if (tab === 'riwayat') loadRiwayat();
 }
 
-// 3. Fungsi Kamera QR Scanner
+// 3. Fungsi Kamera QR Scanner & Absensi
 function startScanner() {
   const alertBox = document.getElementById('absenAlert');
   if (alertBox) alertBox.classList.add('hidden');
@@ -274,22 +234,24 @@ function startScanner() {
     html5QrCode = new Html5Qrcode('reader');
   }
 
-  html5QrCode.start(
-    { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 230, height: 230 } },
-    async (decodedText) => {
-      await stopScanner();
-      kirimAbsensi(decodedText);
-    },
-    () => {}
-  )
-  .then(() => {
-    document.getElementById('btnStartScan')?.classList.add('hidden');
-    document.getElementById('btnStopScan')?.classList.remove('hidden');
-  })
-  .catch(() => {
-    showToast('Tidak dapat mengakses kamera. Pastikan izin kamera aktif.', 'error');
-  });
+  html5QrCode
+    .start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 230, height: 230 } },
+      async (decodedText) => {
+        await stopScanner();
+        kirimAbsensi(decodedText);
+      },
+      () => {}
+    )
+    .then(() => {
+      document.getElementById('btnStartScan')?.classList.add('hidden');
+      document.getElementById('btnStopScan')?.classList.remove('hidden');
+    })
+    .catch(() => {
+      bunyikanBeep('error');
+      showToast('Tidak dapat mengakses kamera. Pastikan izin kamera aktif.', 'error');
+    });
 }
 
 async function stopScanner() {
@@ -305,38 +267,103 @@ async function stopScanner() {
 
 async function kirimAbsensi(qrCodeData) {
   const alertBox = document.getElementById('absenAlert');
-  alertBox.className = 'mt-4 p-3 rounded-xl text-xs font-semibold text-center bg-blue-50 text-blue-700 flex items-center justify-center gap-2';
-  alertBox.innerHTML = `${ICONS.info}<span>Mencatat kehadiran ke Google Sheet...</span>`;
-  alertBox.classList.remove('hidden');
+  if (alertBox) {
+    alertBox.className =
+      'mt-4 p-3 rounded-xl text-xs font-semibold text-center bg-blue-50 text-blue-700 flex items-center justify-center gap-2 transition-all';
+    alertBox.innerHTML = `${ICONS.info}<span>Mencatat kehadiran...</span>`;
+    alertBox.classList.remove('hidden');
+  }
+
+  const payload = {
+    nis: currentStudent?.nis,
+    nama: currentStudent?.nama,
+    kelas: currentStudent?.kelas,
+    qrCodeData,
+  };
 
   try {
+    if (typeof qrCodeData === 'string' && qrCodeData.startsWith('ABSEN-SIBINTANG')) {
+      const qrParts = qrCodeData.split('|').map((p) => p.trim());
+      const kelasQR = (qrParts[1] || '').toUpperCase();
+      const kelasSiswa = (currentStudent?.kelas || '').trim().toUpperCase();
+
+      if (kelasQR && kelasSiswa && kelasQR !== kelasSiswa) {
+        throw new Error(`QR ini khusus Kelas ${kelasQR}. Anda terdaftar di Kelas ${kelasSiswa}.`);
+      }
+    }
+
+    if (!navigator.onLine) {
+      if (typeof simpanKeAntreanOffline === 'function') {
+        simpanKeAntreanOffline(payload);
+      }
+      bunyikanBeep('success');
+
+      if (alertBox) {
+        alertBox.className =
+          'mt-4 p-3 rounded-xl text-xs font-semibold text-center bg-amber-100 text-amber-800 flex items-center justify-center gap-2 transition-all';
+        alertBox.innerHTML = `${ICONS.info}<span>Tersimpan di antrean offline. Akan terkirim otomatis saat online.</span>`;
+      }
+      showToast('Koneksi offline: Data kehadiran disimpan di HP.', 'warning');
+      return;
+    }
+
     const res = await fetch('/api/absen', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nis: currentStudent.nis,
-        nama: currentStudent.nama,
-        kelas: currentStudent.kelas,
-        qrCodeData,
-      }),
+      body: JSON.stringify(payload),
     });
+
     const result = await res.json();
+
     if (result.success) {
-      alertBox.className = 'mt-4 p-3 rounded-xl text-xs font-semibold text-center bg-green-100 text-green-800 flex items-center justify-center gap-2';
-      alertBox.innerHTML = `${ICONS.check}<span>${result.message} (${result.waktu})</span>`;
-      showToast('Absensi berhasil dicatat!', 'success');
-      loadRiwayat();
+      bunyikanBeep('success');
+
+      if (alertBox) {
+        alertBox.className =
+          'mt-4 p-3 rounded-xl text-xs font-semibold text-center bg-green-100 text-green-800 flex items-center justify-center gap-2 transition-all';
+        alertBox.innerHTML = `${ICONS.check}<span>${result.message} (${result.waktu})</span>`;
+      }
+
+      showToast(result.message || 'Absensi berhasil dicatat!', 'success');
+      if (typeof loadRiwayat === 'function') loadRiwayat();
     } else {
-      throw new Error(result.message);
+      throw new Error(result.message || 'Gagal memproses absensi.');
     }
   } catch (err) {
-    alertBox.className = 'mt-4 p-3 rounded-xl text-xs font-semibold text-center bg-red-100 text-red-700 flex items-center justify-center gap-2';
-    alertBox.innerHTML = `${ICONS.error}<span>Gagal mencatat absensi: ${err.message || 'Kesalahan server'}</span>`;
-    showToast('Gagal mencatat absensi.', 'error');
+    const isNetworkError =
+      !navigator.onLine ||
+      err.name === 'TypeError' ||
+      (err.message && err.message.toLowerCase().includes('failed to fetch'));
+
+    if (isNetworkError) {
+      if (typeof simpanKeAntreanOffline === 'function') {
+        simpanKeAntreanOffline(payload);
+      }
+      bunyikanBeep('success');
+
+      if (alertBox) {
+        alertBox.className =
+          'mt-4 p-3 rounded-xl text-xs font-semibold text-center bg-amber-100 text-amber-800 flex items-center justify-center gap-2 transition-all';
+        alertBox.innerHTML = `${ICONS.info}<span>Jaringan terputus. Data disimpan di antrean offline.</span>`;
+      }
+
+      showToast('Koneksi terputus: Disimpan ke antrean offline.', 'warning');
+      return;
+    }
+
+    bunyikanBeep('error');
+
+    if (alertBox) {
+      alertBox.className =
+        'mt-4 p-3 rounded-xl text-xs font-semibold text-center bg-red-100 text-red-700 flex items-center justify-center gap-2 transition-all';
+      alertBox.innerHTML = `${ICONS.error}<span>Gagal mencatat absensi: ${err.message || 'Kesalahan server'}</span>`;
+    }
+
+    showToast(err.message || 'Gagal mencatat absensi.', 'error');
   }
 }
 
-// 4. Memuat Daftar Tugas / PR yang Diberikan Guru
+// 4. Memuat Daftar Tugas Guru
 async function loadDaftarTugasGuru() {
   if (!currentStudent) return;
   const container = document.getElementById('containerDaftarTugasGuru');
@@ -369,7 +396,7 @@ async function loadDaftarTugasGuru() {
           <p class="text-xs text-slate-600 leading-relaxed">${t.deskripsi || '-'}</p>
           <div class="pt-2 flex items-center justify-between gap-2 flex-wrap">
             ${fileLinkBtn}
-            <button type="button" onclick="pilihTugas('${safeJudul}', '${safeMapel}')" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg transition ml-auto">Kumpul Tugas Ini</button>
+            <button type="button" onclick="pilihTugas('${safeJudul}', '${safeMapel}')" class="cursor-pointer text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg transition ml-auto">Kumpul Tugas Ini</button>
           </div>
         </div>
       `;
@@ -387,7 +414,7 @@ function pilihTugas(judul, mapel) {
   inputJudul?.scrollIntoView({ behavior: 'smooth' });
 }
 
-// 5. Proses Upload Jawaban Tugas ke Google Drive & Sheet
+// 5. Upload Tugas Siswa
 document.getElementById('tugasForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('btnSubmitTugas');
@@ -410,7 +437,7 @@ document.getElementById('tugasForm')?.addEventListener('submit', async (e) => {
   formData.append('kelas', currentStudent.kelas);
   formData.append('mapel', document.getElementById('mapel').value);
   formData.append('judulTugas', judulVal);
-  formData.append('judul', judulVal); // Dukungan fallback jika backend membaca properti 'judul'
+  formData.append('judul', judulVal);
   formData.append('fileTugas', fileInput);
 
   try {
@@ -499,7 +526,7 @@ async function loadRiwayat() {
   }
 }
 
-// 7. Handler Submit Form Izin / Sakit
+// 7. Pengajuan Izin Siswa
 document.getElementById('izinForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('btnSubmitIzin');
@@ -557,9 +584,7 @@ async function loadRiwayatIzin() {
     }
 
     tbody.innerHTML = result.izin.map((item) => {
-      // Badge Status Verifikasi Guru
       let badgeVerifikasi = `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold text-[11px] inline-flex items-center gap-1">Menunggu</span>`;
-      
       if (item.verifikasi === 'Disetujui') {
         badgeVerifikasi = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[11px] inline-flex items-center gap-1">✓ Disetujui</span>`;
       } else if (item.verifikasi === 'Ditolak') {
@@ -586,7 +611,7 @@ async function loadRiwayatIzin() {
   }
 }
 
-// 8. Papan Pengumuman Sekolah
+// 8. Pengumuman Sekolah
 async function loadPengumumanSiswa() {
   const container = document.getElementById('listPengumumanSiswa');
   if (!container) return;
@@ -637,61 +662,3 @@ async function loadPengumumanSiswa() {
     container.innerHTML = `<p class="text-xs text-red-500 text-center py-2">Gagal memuat pengumuman terbaru.</p>`;
   }
 }
-
-// 9. PWA Service Worker & Banner Instalasi
-let deferredPrompt = null;
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .catch((err) => console.error('Gagal mendaftarkan Service Worker:', err));
-  });
-}
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  tampilkanBannerInstallPWA();
-});
-
-function tampilkanBannerInstallPWA() {
-  if (document.getElementById('pwaInstallBanner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'pwaInstallBanner';
-  banner.className = 'fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between z-50 border border-slate-700 no-print';
-  banner.innerHTML = `
-    <div class="flex items-center space-x-3">
-      <div class="bg-blue-600 text-white font-bold rounded-xl w-9 h-9 flex items-center justify-center text-sm shadow">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-      </div>
-      <div>
-        <p class="text-xs font-bold">Pasang Aplikasi SiBintang</p>
-        <p class="text-[11px] text-slate-300">Akses cepat langsung dari layar utama</p>
-      </div>
-    </div>
-    <div class="flex items-center space-x-1.5">
-      <button id="btnConfirmInstallPWA" type="button" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
-        Pasang
-      </button>
-      <button id="btnClosePwaBanner" type="button" class="text-slate-400 hover:text-white px-2 py-1 text-sm font-bold">
-        ✕
-      </button>
-    </div>
-  `;
-  document.body.appendChild(banner);
-
-  document.getElementById('btnConfirmInstallPWA')?.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      banner.remove();
-    }
-    deferredPrompt = null;
-  });
-
-  document.getElementById('btnClosePwaBanner')?.addEventListener('click', () => {
-    banner.remove();
-  });
-}
-
